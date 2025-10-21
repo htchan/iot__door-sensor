@@ -1,14 +1,29 @@
 #ifndef DEEP_SLEEP_TASK_H
 #define DEEP_SLEEP_TASK_H
 
-#include "../../const.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-#include <Arduino.h>
+#include "../task.h"
+#include "../door_status/task.h"
+#include "const.h"
+#include <climits>
 
-extern QueueHandle_t deepSleepQueue;
+class DeepSleepTask : public Task
+{
+public:
+    DeepSleepTask(PubSubClient *, std::list<Task *> *tasks, DoorStatusTask doorStatusTask);
+    void loop(unsigned long *) override;
+    void publishDiscovery() override;
+    bool matchTopic(char *) override;
+    void msgHandler(char *, std::string) override;
+    void subscribe();
 
-void setupDeepSleepTask();
-void enableDeepSleepTask();
+private:
+    unsigned long sleepDurationMs = ULONG_MAX;
+    unsigned long connectedSince;
+    DoorStatusTask doorStatusTask;
+    std::list<Task *> *tasks;
+    void sleep(unsigned long);
+    bool allTasksCompleted();
+    int parseMsgValue(std::string);
+};
 
 #endif
