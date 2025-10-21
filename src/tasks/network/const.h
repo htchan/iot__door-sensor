@@ -1,0 +1,6 @@
+#ifndef NETWORK_TASK_CONST
+#define NETWORK_TASK_CONST
+
+#define WIFI_CONNECT_TIMEOUT 2000
+
+#endif
