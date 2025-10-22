@@ -5,6 +5,7 @@ AvailableTask::AvailableTask(PubSubClient *client) : Task(client) {};
 void AvailableTask::cleanup()
 {
     publishOffline();
+    delay(1000);
 }
 
 void AvailableTask::publishDiscovery()

@@ -1,79 +1,90 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include "./const.h"
+
+#include "./tasks/available/task.h"
 #include "./tasks/deep_sleep/task.h"
 #include "./tasks/door_status/task.h"
-#include "./tasks/wifi_strength/task.h"
-#include "./tasks/uptime/task.h"
+#include "./tasks/network/task.h"
 #include "./tasks/power/task.h"
-#include "./utils/network/network.h"
+#include "./tasks/uptime/task.h"
+#include "./tasks/wifi_strength/task.h"
 
+std::list<Task *> tasks;
 
-void onWiFiConnected() {
-  Serial.println("WiFi connected callback started");
-  publishWifiStrengthDiscovery();
-  publishPowerDiscovery();
-  publishDoorStatusDiscovery();
-  publishUptimeDiscovery();
+WiFiClient wifiClient;
+PubSubClient client(wifiClient);
 
-  uint8_t signal = 1;
-  xQueueSend(wifiStrengthQueue, &signal, 0);
-  xQueueSend(uptimeQueue, &signal, 0);
-  enablePublishDoorStatusTask();
-  enableDeepSleepTask(); // Enable deep sleep task after WiFi connection
+AvailableTask availableTask(&client);
+DoorStatusTask doorStatusTask(&client);
+DeepSleepTask deepSleepTask(&client, &tasks, &doorStatusTask);
+PowerTask powerTask(&client);
+UptimeTask uptimeTask(&client);
+WifiStrengthTask wifiStrengthTask(&client);
 
-  publishUptime();
-  Serial.println("WiFi connected callback ended");
+bool alreadyPublished = false;
+
+void networkConnected()
+{
+  unsigned long ms = millis();
+  Serial.printf("Network connected at %lu\n", ms);
+  if (!alreadyPublished)
+  {
+    for (auto &task : tasks)
+    {
+      task->publishDiscovery();
+    }
+
+    alreadyPublished = true;
+  }
+
+  powerTask.subscribe();
+  deepSleepTask.subscribe();
 }
 
-void testLightTask(void * parameter) {
-  while (true) {
-    digitalWrite(LED_PIN, HIGH);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
-    digitalWrite(LED_PIN, LOW);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+void subscribeHandler(char *topic, byte *payload, unsigned int length)
+{
+  std::string message(reinterpret_cast<char *>(payload), length);
+
+  for (auto &task : tasks)
+  {
+    if (task->matchTopic(topic))
+    {
+      task->msgHandler(topic, message);
+    }
   }
 }
 
-void setup() {
-  Serial.begin(9600); // Start serial communication at 9600 baud rate
-  mqttClient.setBufferSize(2048);
-  Serial.flush();
-  Serial.println("Starting setup...");
-  
-  NetworkTaskParams* networkParams = new NetworkTaskParams{
-    .onConnected = onWiFiConnected
-  };
+NetworkTask networkTask(&client, networkConnected, subscribeHandler);
 
-  setupNetworkTask(networkParams); // Initialize network task with default parameters
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("Testing - v0.0.1");
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 
-  pinMode(LED_PIN, OUTPUT); // Set LED pin as output
-  xTaskCreate(
-    testLightTask,
-    "LightTask",
-    2048, // Stack size in words
-    NULL,
-    1, // Priority
-    NULL // Store task handle in tasks array
-  );
-  
-  setupDeepSleepTask();
-  setupDoorStatusTask();
-  setupWifiStrengthTask();
-  setupUptimeTask();
-  setupPowerTask();
+  tasks.push_back(&doorStatusTask);
+  tasks.push_back(&powerTask);
+  tasks.push_back(&availableTask);
+  tasks.push_back(&uptimeTask);
+  tasks.push_back(&deepSleepTask);
+  tasks.push_back(&networkTask);
+  tasks.push_back(&wifiStrengthTask);
 
-  // xTaskCreate(
-  //     networkTask,
-  //     "WifiConnectionTask",
-  //     2048, // Stack size in words
-  //     networkParams,
-  //     1, // Priority
-  //     NULL
-  // );
-  // // Enable the deep sleep task
-  // enableDeepSleepTask();
+  for (auto &task : tasks)
+  {
+    task->setup();
+  }
 }
 
-void loop() {
+void loop()
+{
+  unsigned long ms = millis();
+
+  for (auto &task : tasks)
+  {
+    task->loop(&ms);
+  }
+
+  delay(LOOP_INTERVAL_MS - (millis() % LOOP_INTERVAL_MS));
 }

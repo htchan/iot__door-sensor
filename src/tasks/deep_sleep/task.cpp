@@ -1,6 +1,6 @@
 #include "task.h"
 
-DeepSleepTask::DeepSleepTask(PubSubClient *client, std::list<Task *> *tasks, DoorStatusTask doorStatusTask) : Task(client), tasks(tasks), doorStatusTask(doorStatusTask) {}
+DeepSleepTask::DeepSleepTask(PubSubClient *client, std::list<Task *> *tasks, DoorStatusTask *doorStatusTask) : Task(client), tasks(tasks), doorStatusTask(doorStatusTask) {}
 
 bool DeepSleepTask::allTasksCompleted()
 {
@@ -32,19 +32,13 @@ void DeepSleepTask::loop(unsigned long *ms)
         return;
     }
 
-    // sleep will not be applicable if sleep duration is 0
-    if (sleepDurationMs == ULONG_LONG_MAX)
-    {
-        return;
-    }
-
-    if (Task::isConnected())
+    if (sleepDurationMs != ULONG_LONG_MAX && Task::isConnected())
     {
         // there is a more restricted length for device up duration if it connected to wifi
         if (connectedSince != 0 && *ms - connectedSince > ONLINE_FORCE_SLEEP_DURATION_MS)
         {
             Serial.printf("force online sleep at %lu\n", *ms);
-            sleep(max(sleepDurationMs, (unsigned long)DEFAULT_SLEEP_DURATION_MS));
+            sleep(sleepDurationMs);
             return;
         }
 
@@ -66,7 +60,7 @@ void DeepSleepTask::sleep(unsigned long sleepInterval)
     }
 
     Serial.printf("deep sleep for %lu\n", sleepInterval);
-    if (doorStatusTask.latestStatus())
+    if (doorStatusTask->latestStatus())
     {
         esp_deep_sleep_enable_gpio_wakeup(1ULL << DOOR_STATUS_PIN, ESP_GPIO_WAKEUP_GPIO_LOW);
     }

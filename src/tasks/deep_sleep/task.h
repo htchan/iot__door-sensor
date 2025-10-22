@@ -9,7 +9,7 @@
 class DeepSleepTask : public Task
 {
 public:
-    DeepSleepTask(PubSubClient *, std::list<Task *> *tasks, DoorStatusTask doorStatusTask);
+    DeepSleepTask(PubSubClient *, std::list<Task *> *tasks, DoorStatusTask *doorStatusTask);
     void loop(unsigned long *) override;
     void publishDiscovery() override;
     bool matchTopic(char *) override;
@@ -17,9 +17,9 @@ public:
     void subscribe();
 
 private:
-    unsigned long sleepDurationMs = ULONG_MAX;
+    unsigned long long sleepDurationMs = ULONG_LONG_MAX;
     unsigned long connectedSince;
-    DoorStatusTask doorStatusTask;
+    DoorStatusTask *doorStatusTask;
     std::list<Task *> *tasks;
     void sleep(unsigned long);
     bool allTasksCompleted();

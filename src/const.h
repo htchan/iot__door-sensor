@@ -27,6 +27,6 @@ const std::string DISCOVERY_TOPIC = "/config";
 
 #define LED_PIN GPIO_NUM_8
 
-#define LOOP_INTERVAL_MS 100
+#define LOOP_INTERVAL_MS 500
 
 #endif
