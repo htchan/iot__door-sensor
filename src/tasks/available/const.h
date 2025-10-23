@@ -22,6 +22,7 @@ const std::string AVAILABLE_DISCOVERY_PAYLOAD =
     AVAILABLE_STATE_PAYLOAD_OFFLINE + R"(",
     "availability_topic":")" +
     AVAILABLE_ENTITY + STATE_TOPIC + R"(",
+    "expire_after":90,
     "entity_category":"diagnostic",
     "device_class":"connectivity"
 })";
