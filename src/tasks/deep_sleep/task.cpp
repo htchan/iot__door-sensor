@@ -52,7 +52,7 @@ void DeepSleepTask::loop(unsigned long *ms)
     }
 }
 
-void DeepSleepTask::sleep(unsigned long sleepInterval)
+void DeepSleepTask::sleep(unsigned long long sleepInterval)
 {
     for (auto &task : *tasks)
     {
@@ -84,9 +84,9 @@ bool DeepSleepTask::matchTopic(char *topic)
     return (strcmp(topic, (UPDATE_FREQUENCY_ENTITY + STATE_TOPIC).c_str()) == 0);
 }
 
-int DeepSleepTask::parseMsgValue(std::string msg)
+unsigned long long DeepSleepTask::parseMsgValue(std::string msg)
 {
-    int value = 30, unit = 1;
+    unsigned long long value = 30, unit = 1;
     int pos = msg.find(" ");
     std::string valueStr = msg.substr(0, pos);
     std::string unitStr = msg.substr(pos + 1);
@@ -115,7 +115,7 @@ void DeepSleepTask::msgHandler(char *topic, std::string message)
         return;
     }
 
-    int value = parseMsgValue(message);
+    unsigned long long value = parseMsgValue(message);
 
     sleepDurationMs = value * 1000;
 

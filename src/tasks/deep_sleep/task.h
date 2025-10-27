@@ -21,9 +21,9 @@ private:
     unsigned long connectedSince;
     DoorStatusTask *doorStatusTask;
     std::list<Task *> *tasks;
-    void sleep(unsigned long);
+    void sleep(unsigned long long);
     bool allTasksCompleted();
-    int parseMsgValue(std::string);
+    unsigned long long parseMsgValue(std::string);
 };
 
 #endif
