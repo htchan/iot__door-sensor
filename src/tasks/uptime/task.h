@@ -1,27 +1,20 @@
 #ifndef UPTIME_TASK_H
 #define UPTIME_TASK_H
 
-#include "../../const.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
+#include "../task.h"
+#include "const.h"
 
-const std::string UPTIME_ENTITY = "homeassistant/sensor/" + DEVICE_ID + "/uptime";
-const std::string UPTIME_DISCOVERY_PAYLOAD = 
-R"({
-    "device":)" + DEVICE_PAYLOAD + R"(,
-    "unique_id":")" + DEVICE_ID + R"(__uptime",
-    "name":"Uptime",
-    "unit_of_measurement":"ms",
-    "state_topic":")" + UPTIME_ENTITY + STATE_TOPIC + R"(",
-    "entity_category":"diagnostic",
-    "state_class":"measurement",
-    "device_class":"duration"
-})";
+class UptimeTask : public Task
+{
+public:
+    UptimeTask(PubSubClient *);
+    void cleanup() override;
+    void loop(unsigned long *) override;
+    void publishDiscovery() override;
 
-extern QueueHandle_t uptimeQueue;
-
-void setupUptimeTask();
-void publishUptimeDiscovery();
-void publishUptime();
+private:
+    unsigned long uptimePublishedAt = 0;
+    void publishState(unsigned long *);
+};
 
 #endif

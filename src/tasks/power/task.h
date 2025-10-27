@@ -1,22 +1,28 @@
 #ifndef POWER_TASK_H
 #define POWER_TASK_H
 
-#include "../../const.h"
+#include "../task.h"
+#include "const.h"
 
-const std::string POWER_ENTITY = "homeassistant/sensor/" + DEVICE_ID + "/vcc_voltage";
-const std::string POWER_DISCOVERY_PAYLOAD = 
-R"({
-    "device":)" + DEVICE_PAYLOAD + R"(,
-    "unique_id":")" + DEVICE_ID + R"(__vcc_voltage",
-    "name":"VCC Voltage",
-    "unit_of_measurement":"V",
-    "state_topic":")" + POWER_ENTITY + STATE_TOPIC + R"(",
-    "entity_category":"diagnostic",
-    "state_class":"measurement",
-    "device_class":"voltage"
-})";
+class PowerTask : public Task
+{
+public:
+    PowerTask(PubSubClient *);
+    void loop(unsigned long *) override;
+    void publishDiscovery() override;
+    bool matchTopic(char *) override;
+    void msgHandler(char *, std::string) override;
+    bool canDeepSleep() override { return powerPublishedAt > 0; }
+    void subscribe();
 
-void setupPowerTask();
-void publishPowerDiscovery();
+private:
+    unsigned long powerReadAt = 0;
+    unsigned long powerPublishedAt = 0;
+    float voltageArray[POWER_STATE_TOTAL_COUNT];
+    unsigned long voltageArrayIndex = 0;
+    unsigned long lowPowerThresholdSubscribedAt = 0;
+    void readData(unsigned long *);
+    void publishState(unsigned long *);
+};
 
 #endif
